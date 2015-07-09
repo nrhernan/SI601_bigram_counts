@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+from mrjob.job import MRJob
+from mrjob.step import MRStep
+import re
+import string
+
+w = re.compile(r"[\S]+")
+
+class MRSecondWordProb(MRJob):
+    
+    def mapper(self, _, line):
+        line_cl = line.replace('\"', '')
+        parts=w.findall(line_cl)
+        yield parts[0], [parts[1:(len(parts)-1)], float(parts[-1])]
+    
+    def reducer(self, word, secondword_lists):
+    #Determines total instances of first word
+    #Returns the first word, the list of secondword/count lists, and the total as the value, type=tuple
+        swl = list(secondword_lists)
+        total = sum([swl[x][-1] for x in range(len(swl))])
+        for pair in swl:
+            pair.append(pair[-1]/total)        
+        yield word, swl
+
+
+if __name__ == '__main__':
+    MRSecondWordProb.run()
